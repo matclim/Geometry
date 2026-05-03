@@ -1,0 +1,8 @@
+{
+  "name": "viewer-pipeline-deps",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "root2cad": "^1.1.1"
+  }
+}

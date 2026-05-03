@@ -1,0 +1,138 @@
+<!--
+  SPDX-License-Identifier: LGPL-3.0-or-later
+  Copyright (C) CERN for the benefit of the SHiP Collaboration
+
+  Browser-based ROOT -> glTF exporter for the SHiP geometry.
+
+  Loading model
+  -------------
+  This page loads ./ship.root via JSROOT's openFile, which issues HTTP
+  Range requests to fetch slices of the file. The server hosting this
+  page MUST honour Range (a real Range request returns 206 Partial
+  Content with only the requested bytes; a non-Range-aware server like
+  Python's stdlib http.server returns 200 OK with the whole file, which
+  JSROOT detects and aborts with "Server response size N larger than
+  expected M").
+
+  Use a Range-aware server. Easiest:
+
+      cd viewer/build
+      npx http-server -p 8000
+
+  Then open http://localhost:8000/export.html.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SHiP geometry — ROOT → glTF exporter</title>
+
+<script type="importmap">
+{
+  "imports": {
+    "three":         "https://unpkg.com/three@0.178.0/build/three.module.js",
+    "gltfexporter": "https://unpkg.com/three@0.178.0/examples/jsm/exporters/GLTFExporter.js",
+    "root":          "https://root.cern/js/7.9.0/modules/main.mjs",
+    "rootgeom":      "https://root.cern/js/7.9.0/modules/geom/TGeoPainter.mjs"
+  }
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.js"></script>
+
+<style>
+  body {
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    margin: 40px; max-width: 760px; color: #222;
+  }
+  h1 { font-size: 18px; margin-bottom: 6px; }
+  code { background: #f0f0f0; padding: 1px 5px; border-radius: 2px; }
+  .status { padding: 12px 16px; border-radius: 4px; margin: 18px 0;
+            background: #f5f5f5; border-left: 4px solid #888;
+            white-space: pre-wrap; font-family: ui-monospace, monospace;
+            font-size: 12px; }
+  .status.ok    { background: #e8f5e8; border-left-color: #4a8b4a; }
+  .status.err   { background: #f8e8e8; border-left-color: #b04a4a; }
+  .status.busy  { background: #f5f0e0; border-left-color: #c09040; }
+</style>
+</head>
+<body>
+
+<h1>SHiP ROOT → glTF exporter</h1>
+<p>Reads <code>./ship.root</code> from this server and exports a
+Phoenix-ready glTF. The download starts automatically when conversion
+finishes (typically several minutes for the SHiP geometry).</p>
+
+<div id="status" class="status">Initialising…</div>
+
+<script type="module">
+const status = document.getElementById('status');
+const setStatus = (msg, kind) => {
+    status.textContent = msg;
+    status.className = 'status' + (kind ? ' ' + kind : '');
+};
+
+try {
+    setStatus('Loading converter (phoenixExport.js)…', 'busy');
+    const { convertGeometry } = await import('./phoenixExport.js');
+
+    // Patterns match the unique subsystem-name fragment anywhere in the
+    // path string. The exporter walks every node, builds an underscore-
+    // joined string from the full path, and tests each pattern. The exact
+    // shape of the joined path depends on JSROOT's name-mangling: it can
+    // include _pv (physical volume) and _lv (logical volume) prefixes
+    // around each level, e.g. "_cave_pvSHiP_pvtrackers_lv_SHiP_trackers".
+    // Rather than assume a specific shape, we anchor only on the
+    // distinctive subsystem name token (trackers, sbt, etc.). Each is
+    // unique enough that overlapping matches aren't a concern.
+    //
+    // The second element is either:
+    //   - true/false: initially visible/hidden (full opacity)
+    //   - a float 0..1: initially visible at that opacity
+    // We make the cavern translucent so it doesn't hide everything inside.
+    const subparts = {
+        "Cavern":                       [[/cavern/i],          0.10],
+        "Target":                       [[/target/i],          true],
+        "Muon shield":                  [[/muon_shield/i],     true],
+        "Decay volume":                 [[/decay_volume/i],    0.20],
+        "Surround tagger":              [[/\bsbt\b/i],         0.50],
+        "Tracking > Upstream tagger":   [[/upstream_tagger/i], true],
+        "Tracking > Stations":          [[/trackers/i],        true],
+        "Tracking > Magnet":            [[/magnet/i],          true],
+        "Calorimetry > Timing detector":[[/timing_detector/i], true],
+        "Calorimetry > Calorimeter":    [[/calorimeter/i],     true],
+    };
+    const hide_children = [];
+
+    setStatus('Converting ./ship.root → ship.gltf …\n' +
+              '(this can take several minutes — the page may freeze briefly)\n' +
+              'Check the browser Console (F12) for diagnostic output.',
+              'busy');
+
+    await convertGeometry(
+        './ship.root',
+        'ship.gltf',
+        9,
+        subparts,
+        hide_children,
+        true,
+        'default',
+        12
+    );
+
+    setStatus('Done — ship.gltf was downloaded to your browser\'s ' +
+              'default download location. Move it into viewer/build/.',
+              'ok');
+    window.__exportComplete = true;
+} catch (err) {
+    console.error(err);
+    setStatus('ERROR: ' + (err && err.message ? err.message : err) +
+              '\n\nIf you see "Server response size ... larger than expected ...", ' +
+              'your HTTP server is not honouring Range requests. Use ' +
+              '`npx http-server` instead of `python3 -m http.server`.',
+              'err');
+    window.__exportError = String(err);
+}
+</script>
+
+</body>
+</html>

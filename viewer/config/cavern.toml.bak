@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+# Copyright (C) CERN for the benefit of the SHiP Collaboration
+#
+# Cavern visibility for the Phoenix viewer.
+#
+# `depth` = number of generations to keep below the subsystem envelope
+# during glTF export. depth=0 → envelope only; deeper geometry is detached
+# from the tree before export so the exporter doesn't recurse.
+
+depth = 0

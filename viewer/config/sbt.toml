@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+# Copyright (C) CERN for the benefit of the SHiP Collaboration
+#
+# depth=1: keep ~234 H-beam pieces + ~130 sensor containers as solid blocks.
+# depth=2 would add 7 walls + 6 cells per sensor container (≈1690 GeoTrap
+# leaves) — heavy. Stay at 1 unless you're inspecting individual cells.
+
+depth = 1

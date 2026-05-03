@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+# Copyright (C) CERN for the benefit of the SHiP Collaboration
+#
+# depth=1: show the calorimeter as its first-generation children
+# (modules / sampling layers as solid blocks). Stops before fibres.
+#
+# This is the most aggressive prune of any subsystem — the calorimeter's
+# deeper structure (HPL plates, individual fibres, scintillator strips)
+# expands to hundreds of thousands of leaves and is unrenderable in a
+# browser. Increase to 2 only if you specifically need to verify the
+# plate/casing layout, and accept the >1 GB glTF that results.
+
+depth = 1

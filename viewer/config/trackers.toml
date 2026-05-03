@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+# Copyright (C) CERN for the benefit of the SHiP Collaboration
+#
+# depth=2: keep stations and the 4 stereo layers per station, BUT stop
+# before drilling into the 9600 straws. Each layer envelope renders as a
+# single thin slab (the layer's `air` envelope), which is what you want
+# for inspection.
+#
+# WARNING: depth >= 3 emits all 9600 straw tubes. Resulting glTF is huge
+# and will crash most browsers.
+
+depth = 2
