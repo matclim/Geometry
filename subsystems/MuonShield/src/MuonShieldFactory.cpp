@@ -11,8 +11,11 @@
 #include <GeoModelKernel/GeoLogVol.h>
 #include <GeoModelKernel/GeoNameTag.h>
 #include <GeoModelKernel/GeoPhysVol.h>
+#include <GeoModelKernel/GeoShapeShift.h>
+#include <GeoModelKernel/GeoShapeSubtraction.h>
 #include <GeoModelKernel/GeoTransform.h>
 
+#include <cstring>
 #include <string>
 
 namespace SHiPGeometry {
@@ -144,10 +147,46 @@ GeoPhysVol* MuonShieldFactory::buildStation(const StationData& station) {
 
     // Place 8 Iron bounding-box approximations
     for (const PieceData& piece : station.pieces) {
-        auto* pieceBox = new GeoBox(piece.halfX, piece.halfY, piece.halfZ);
-        std::string pieceName = "/SHiP/muon_shield/" + std::string(station.name) + "/" + piece.name;
-        auto* pieceLog = new GeoLogVol(pieceName, pieceBox, iron);
-        auto* piecePhys = new GeoPhysVol(pieceLog);
+        // The SND apparatus is housed in a 4000 x 700 x 700 mm (z x y x) air
+        // cavity carved into the last magnet (Magn5). The cavity is centred on
+        // the SND envelope from subsystem_envelopes.csv (world z 28950 mm),
+        // which is 198.4 mm upstream of the Magn5 station centre. It intersects
+        // only the two middle iron pieces, from which it is subtracted so the
+        // iron has a real hole. See subsystems/SND for the detector inside.
+        const bool isMagn5 = (std::strcmp(station.name, "magn_5") == 0);
+        const bool isMiddlePiece =
+            (std::strcmp(piece.name, "middle_mag_l") == 0) ||
+            (std::strcmp(piece.name, "middle_mag_r") == 0);
+        const bool carveCavity = isMagn5 && isMiddlePiece;
+
+        std::string pieceName =
+            "/SHiP/muon_shield/" + std::string(station.name) + "/" + piece.name;
+
+        GeoPhysVol* piecePhys = nullptr;
+        if (carveCavity) {
+            // Cavity half-sizes (mm): 700 x 700 x 4000 full.
+            constexpr double cavHalfX = 350.0;
+            constexpr double cavHalfY = 350.0;
+            constexpr double cavHalfZ = 2000.0;
+            // Cavity z-centre relative to the Magn5 station origin: the SND
+            // sits at world z 28950 mm, the Magn5 station at world z 29148.4 mm.
+            constexpr double cavOffsetZ = -198.4;
+
+            auto* pieceBox = new GeoBox(piece.halfX, piece.halfY, piece.halfZ);
+            // Cavity centred on the SND envelope; in this piece's local frame
+            // that is offset by (-centX, -centY, cavOffsetZ).
+            auto* cavityBox = new GeoBox(cavHalfX, cavHalfY, cavHalfZ);
+            const GeoTrf::Transform3D cavityTrf =
+                GeoTrf::Translate3D(-piece.centX, -piece.centY, cavOffsetZ);
+            const GeoShape& carved = pieceBox->subtract((*cavityBox) << cavityTrf);
+
+            auto* pieceLog = new GeoLogVol(pieceName, &carved, iron);
+            piecePhys = new GeoPhysVol(pieceLog);
+        } else {
+            auto* pieceBox = new GeoBox(piece.halfX, piece.halfY, piece.halfZ);
+            auto* pieceLog = new GeoLogVol(pieceName, pieceBox, iron);
+            piecePhys = new GeoPhysVol(pieceLog);
+        }
 
         GeoTrf::Transform3D trf = GeoTrf::Translate3D(piece.centX, piece.centY, 0.0);
         stationPhys->add(new GeoNameTag(pieceName));

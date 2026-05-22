@@ -62,6 +62,7 @@ install(
         Calorimeter
         UpstreamTagger
         TimingDetector
+        SND
     EXPORT SHiPGeometryTargets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -87,6 +88,7 @@ foreach(
     Calorimeter
     UpstreamTagger
     TimingDetector
+    SND
 )
     install(
         DIRECTORY subsystems/${subsys}/include/${subsys}

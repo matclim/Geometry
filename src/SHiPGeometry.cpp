@@ -9,6 +9,7 @@
 #include "Magnet/MagnetFactory.h"
 #include "MuonShield/MuonShieldFactory.h"
 #include "SHiPGeometry/SHiPMaterials.h"
+#include "SND/SNDFactory.h"
 #include "Target/TargetFactory.h"
 #include "TimingDetector/TimingDetectorFactory.h"
 #include "Trackers/TrackersFactory.h"
@@ -57,6 +58,21 @@ GeoPhysVol* SHiPGeometryBuilder::build() {
     world->add(new GeoIdentifierTag(2));
     world->add(new GeoTransform(muonShieldTrf));
     world->add(muonShield);
+
+    // Build and place the SND (Scattering and Neutrino Detector)
+    // The SND occupies a 4000 x 700 x 700 mm air cavity carved into the last
+    // muon-shield magnet (Magn5); MuonShieldFactory carves that cavity. The
+    // SND container centre coincides with the Magn5 station centre:
+    //   MuonShieldArea world-z 16763.3 mm + Magn5 station-z 12385.1 mm.
+    // The /SHiP/snd container therefore lies inside /SHiP/muon_shield by
+    // design — this intentional overlap is whitelisted in test_consistency.
+    SNDFactory sndFactory(materials);
+    GeoPhysVol* snd = sndFactory.build();
+    GeoTrf::Transform3D sndTrf = GeoTrf::Translate3D(0.0, 0.0, SNDFactory::s_worldZ);
+    world->add(new GeoNameTag("/SHiP/snd"));
+    world->add(new GeoIdentifierTag(9));
+    world->add(new GeoTransform(sndTrf));
+    world->add(snd);
 
     // Build and place UpstreamTagger (sensitive scintillator slab)
     // Z: 32.52 to 32.92 m → centre: 32.72 m

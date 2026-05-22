@@ -26,4 +26,5 @@ target_link_libraries(
         Magnet
         TimingDetector
         Calorimeter
+        SND
 )

@@ -26,6 +26,17 @@ MuonShieldArea (Air, 3620×3400×29448 mm)
 
 Position in world: z = 16763.3 mm (centre of MuonShieldArea).
 
+## SND cavity
+
+A 4000 x 700 x 700 mm (z x y x) air cavity is carved into the two middle iron
+pieces of the last station (Magn5) to house the Scattering and Neutrino
+Detector. The cavity is subtracted from the iron (GeoShapeSubtraction), so the
+iron has a real hole rather than the SND overlapping solid material. The cavity
+is centred at world z = 28950 mm (the SND envelope from
+subsystem_envelopes.csv), leaving ~140 mm and ~537 mm of iron upstream and
+downstream. The detector that occupies the cavity is the separate SND
+subsystem.
+
 ## Materials
 
 | Material | Density   | Usage            |
